@@ -33,6 +33,11 @@ body.webkitOverflowScrolling {
 
 /* reset */
 
+input {
+	font-size: inherit;
+	font-family: inherit;
+}
+
 button {
 	font-size: inherit;
 	font-family: inherit;
