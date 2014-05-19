@@ -109,7 +109,8 @@ enyo.kind({
 					// to the FormData
 				}
 			} else {
-				xhr_headers["Content-Type"] = this.contentType;
+				if (this.contentType)
+					xhr_headers["Content-Type"] = this.contentType;
 				if (body instanceof Object) {
 					if (this.contentType.match(/^application\/json(;.*)?$/) !== null) {
 						body = JSON.stringify(body);
