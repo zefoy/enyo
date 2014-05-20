@@ -28,12 +28,9 @@ body.webkitOverflowScrolling {
 
 /* reset */
 
-input {
-	font-size: inherit;
-	font-family: inherit;
-}
-
-button {
+input,
+button,
+textarea {
 	font-size: inherit;
 	font-family: inherit;
 }
