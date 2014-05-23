@@ -171,7 +171,7 @@ enyo.kind({
 			this.addStyles('left: ' + (p.left !== null ? p.left + 'px' : 'initial') + '; right: ' + (p.right !== null ? p.right + 'px' : 'initial') + '; top: ' + (p.top !== null ? p.top + 'px' : 'initial') + '; bottom: ' + (p.bottom !== null ? p.bottom + 'px' : 'initial') + ';');
 		} else if (this.centered) {
 			//var o = this.getInstanceOwner().getBounds();
-			this.addStyles( "top: " + Math.max( ( ( d.height - b.height ) / 2 ), 0 ) + "px; left: " + Math.max( ( ( d.width - b.width ) / 2 ), 0 ) + "px;" );
+			this.addStyles( "top: " + Math.max( Math.floor( ( d.height - b.height ) / 2 ), 0 ) + "px; left: " + Math.max( Math.floor( ( d.width - b.width ) / 2 ), 0 ) + "px;" );
 		}
 	},
 	showingChanged: enyo.inherit(function (sup) {
