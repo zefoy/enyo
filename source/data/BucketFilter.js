@@ -59,6 +59,14 @@
 		defaultFilter: null,
 		
 		/**
+		* Sorts the bucket filter models if comparator exists or sort function is given as a parameter.
+		*/
+		sort: function(sort)  {
+			if (sort || this.comparator)
+				this._internal.models.sort(sort || this.comparator);
+		},
+				
+		/**
 		* Removes any [activeFilter]{@link enyo.BucketFilter#activeFilter}. If there is a
 		* [defaultFilter]{@link enyo.BucketFilter#defaultFilter}, this method will automatically
 		* set it as the active filter (if it wasn't already active). Otherwise, it will set the
@@ -70,8 +78,33 @@
 		* @public
 		*/
 		reset: function (opts) {
+			if (this.collection) {
+				// because we can't be certain that the models were completely replaced on the
+				// the collection we have to make a new copy each time reset is called
+				this._internal.set('models', this.collection.models.copy());
+
+				this.set('models', this._internal.models);
+			}
+			
 			return this.set('activeFilter', this.defaultFilter || '*', opts);
 		},
+		
+		/**
+		* An overloaded version of the normal [filter()]{@link enyo.Collection#filter} method.
+		* This method may be called without parameters to trigger an in-place application of
+		* the [_filter()]{@link enyo.BucketFilter#_filter} method against the current set
+		* or subset of [models]{@link enyo.Model}.
+		*
+		* @method
+		* @public
+		*/
+		filter: enyo.inherit(function (sup) {
+			return function () {
+				if (arguments.length > 0) return sup.apply(this, arguments);
+
+				return this._filter();
+			};
+		}),
 		
 		/**
 		* @private
@@ -108,6 +141,35 @@
 		}),
 		
 		/**
+		* Abstracted to allow (internal) subkinds to overload the filter method and still call
+		* this method for the same behavior if necessary.
+		*
+		* @private
+		*/
+		_filter: function () {
+			var internal = this._internal,
+				len = internal.length,
+				res;
+
+			if (len) {
+				// skip one arbitrary level of abstraction to the lowest level implementation of
+				// the filter that we can since we need an array that we can reuse anyway
+				res = internal.models.slice().filter(this.method, this.owner);
+
+				if (res.length != len) {
+					internal.empty(res);
+
+					if (!this.maxLength)
+						this.set('length', internal.models.length);
+					else
+						this.set('length', Math.min(internal.models.length, this.maxLength));
+				}
+			}
+
+			return res || [];
+		},
+		
+		/**
 		* See the comments on {@link enyo.Filter#_collectionEvent}.
 		* 
 		* @private
@@ -129,7 +191,7 @@
 				internal.add(filtered, {merge: false});
 				break;
 			case 'reset':
-				
+			case 'sort':
 				filtered = models.filter(this.method, owner);
 				
 				// will ensure a reset gets propagated
@@ -150,6 +212,14 @@
 				else if (internal.has(props.model)) internal.remove(props.model);
 				break;
 			}
+			
+			if (this.comparator) {
+				internal.models.sort(this.comparator);
+
+				internal.emit("sort", props);
+			}
+
+			if (this.maxLength) this.set('length', Math.min(this.get('length'), this.maxLength));
 		},
 		
 		/**
@@ -161,7 +231,12 @@
 			// propagate the event, otherwise not
 			if (this.models === sender.models) {
 				
-				if (sender.models.length != this.length) this.set('length', sender.models.length);
+				if (sender.models.length != this.length) {
+					if (!this.maxLength)
+						this.set('length', sender.models.length);
+					else
+						this.set('length', Math.min(sender.models.length, this.maxLength));
+				}
 				
 				this.emit(e, props);
 			} else if ((!this.isChildFilter) && (e === 'reset')) {
@@ -223,7 +298,12 @@
 		*/
 		_activeFilterCollectionEvent: function (sender, e, props) {
 			
-			if (sender.models.length != this.length) this.set('length', sender.models.length);
+			if (sender.models.length != this.length) {
+				if (!this.maxLength)
+					this.set('length', sender.models.length);
+				else
+					this.set('length', Math.min(sender.models.length, this.maxLength));
+			}
 			
 			// we share the same reference to our models (ModelList) array so we don't need to
 			// try and keep them synchronized as a separate effort we simply emit the event

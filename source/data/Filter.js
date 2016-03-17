@@ -94,6 +94,21 @@
 		/**
 		* @private
 		*/
+		initComponents: enyo.inherit(function (sup) {
+			return function () {
+				var c = this.kindComponents || this.components || [];
+
+				for (var i = 0; i< c.length; i++) {
+					c[i].owner = this;
+				}
+
+				sup.apply(this, arguments);
+			};
+		}),
+		
+		/**
+		* @private
+		*/
 		adjustComponentProps: enyo.inherit(function (sup) {
 			return function (props) {
 				// all filters are public...always...except when they aren't...
@@ -114,6 +129,10 @@
 					// most likely it will be a string but it is possible that the filter method
 					// be declared inline in the component descriptor block
 					if (typeof props.method == 'string') props.method = this[props.method];
+					
+					if (this.options.sort) {
+						if (typeof props.comparator == 'string') props.comparator = this[props.comparator];
+					}
 					
 					// we assign an always true method if none exists just because we assume it was
 					// mean to be a mirror filter for the entire dataset
