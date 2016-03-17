@@ -242,15 +242,15 @@
 		* @private
 		*/
 		off: enyo.inherit(function (sup) {
-			return function (ctor, e, fn) {
+			return function (ctor, e, fn, ctx) {
 				var listeners,
 					idx;
 				
 				if (typeof ctor == 'function') {
-					listeners = this.scopeListeners(ctor);
+					listeners = this.scopeListeners();
 					if (listeners.length) {
 						idx = listeners.findIndex(function (ln) {
-							return ln.event == e && ln.method === fn;
+							return ln.scope === ctor && ln.event == e && ln.method === fn && (!ctx || ln.ctx === ctx);
 						});
 						
 						// if it found the entry we remove it
