@@ -213,6 +213,7 @@
 		rendered: enyo.inherit(function (sup) {
 			return function () {
 				sup.apply(this, arguments);
+				this.srcChanged();
 				enyo.makeBubble(this, 'load', 'error');
 			};
 		}),
