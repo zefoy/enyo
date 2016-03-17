@@ -268,6 +268,25 @@
 		to: null,
 
 		/**
+		* Set this to true to always invert the from value or the value returned by
+		* the transform Function.
+		*
+		* @type {Boolean}
+		* @default false
+		* @public
+		*/
+		invert: false,
+
+		/**
+		* Set this to true if resize call is needed for the target after value change.
+		*
+		* @type {Boolean}
+		* @default false
+		* @public
+		*/
+		resize: false,
+
+		/**
 		* Set this to a [function]{@glossary Function} or the name of a method on
 		* the [owner]{@link enyo.Binding#owner} of this [binding]{@link enyo.Binding}.
 		* The transform is used to programmatically modify the value being synchronized.
@@ -430,7 +449,9 @@
 				case DIRTY_TO:
 					val = target.get(to);
 					if (xform) val = xform.call(this.owner || this, val, DIRTY_TO, this);
+					if (!this._stop && this.invert) val = !val;
 					if (!this._stop) source.set(from, val, {create: false});
+					if (!this._stop && this.resize) source.resize();
 					break;
 				case DIRTY_FROM:
 					
@@ -439,7 +460,9 @@
 				// default:
 					val = source.get(from);
 					if (xform) val = xform.call(this.owner || this, val, DIRTY_FROM, this);
+					if (!this._stop && this.invert) val = !val;
 					if (!this._stop) target.set(to, val, {create: false});
+					if (!this._stop && this.resize) target.resize();
 					break;
 				}
 				this.dirty = null;
