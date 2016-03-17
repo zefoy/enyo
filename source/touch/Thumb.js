@@ -87,7 +87,7 @@
 		* @public
 		*/
 		update: function (strategy) {
-			if (this.showing) {
+			if (this.showing && this.scrollBounds) {
 				var d = this.dimension, o = this.offset;
 				var bd = this.scrollBounds[this.sizeDimension], sbd = this.scrollBounds[d];
 				var overs = 0, overp = 0, over = 0;
@@ -100,7 +100,7 @@
 					overs = Math.abs(over);
 					overp = Math.max(over, 0);
 				}
-				var sbo = strategy[this.positionMethod]() - over;
+				var sbo = strategy[this.positionMethod]() - over - this.cornerSize / 2;
 				// calc size & position
 				var bdc = bd - this.cornerSize;
 				var s = Math.floor((bd * bd / sbd) - overs);
