@@ -47,6 +47,9 @@
 	*	any given [attributes]{@link enyo.Model#attributes}; after
 	*	[fetching]{@link enyo.Model#fetch}, parse the data before calling
 	* [set()]{@link enyo.Model#set}.
+	* @property {Boolean} purge=false - Purge all [attributes]{@link enyo.Model#attributes} 
+	* from the [model]{@link enyo.Model} that are not included in the attributes passed to 
+	* [set()]{@link enyo.Model#set}.
 	* @property {Boolean} fetch=false - Automatically call [fetch()]{@link enyo.Model#fetch}
 	*	during initialization.
 	*/
@@ -231,6 +234,7 @@
 			silent: false,
 			commit: false,
 			parse: false,
+			purge: false,
 			fetch: false
 		},
 
@@ -629,6 +633,17 @@
 				force = force || opts.force;
 				commit = opts.commit;
 				fetched = opts.fetched;
+
+				if (opts.purge) {
+					for (key in this.attributes) {
+						if (incoming[key] === undefined) {
+							changed = this.changed || (this.changed = {});
+							changed[key] = attrs[key] = undefined;
+
+							delete this.attributes[key];
+						}
+					}
+				}
 
 				for (key in incoming) {
 					value = incoming[key];

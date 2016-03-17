@@ -41,6 +41,9 @@
 	* @property {Boolean} parse=false - Whether or not the relation should call the
 	*	[parse()]{@link enyo.Model#parse} method on incoming data before
 	*	[setting]{@link enyo.Model#set} it on the [model]{@link enyo.RelationalModel}.
+	* @property {Boolean} purge=false - Purge all [attributes]{@link enyo.Model#attributes}
+	* from the [model]{@link enyo.RelationalModel} that are not included in the attributes passed
+	* to [set()]{@link enyo.RelationalModel#set}.
 	* @property {String} model=enyo.RelationalModel - The kind of the
 	*	reverse of the relation. This will vary depending on the type of relation being declared.
 	* @property {Boolean} fetch=false - Whether or not to automatically call
@@ -60,6 +63,7 @@
 		key: null,
 		create: false,
 		parse: false,
+		purge: false,
 		model: 'enyo.RelationalModel',
 		fetch: false,
 		inverseKey: null,
@@ -1120,6 +1124,22 @@
 				// need to emit an event because we will
 				this._changing = true;
 				
+				if (opts.purge) {
+					for (key in this.attributes) {
+						curr = this.attributes[key];
+						if (!curr || !(curr instanceof Relation)) {
+							if (incoming[key] === undefined) {
+								changed || (changed = this.changed = {});
+								// assign previous value for reference
+								prev[key] = curr;
+								changed[key] = attrs[key] = undefined;
+
+								delete this.attributes[key];
+							}
+						}
+					}
+				}
+
 				for (key in incoming) {
 					value = incoming[key];
 					
