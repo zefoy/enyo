@@ -99,7 +99,7 @@
 			// ensure we have a constructor for our related model kind
 			this.model = enyo.constructorForKind(this.model);
 			
-            this.includeInJSON = props.includeInJSON == null && !this.isOwner
+			this.includeInJSON = props.includeInJSON == null && !this.isOwner
 				? (this.model.prototype.primaryKey || 'id')
 				: this.includeInJSON;
 			
@@ -117,7 +117,7 @@
 		/**
 		* @private
 		*/
-		setRelated: function (related) {
+		setRelated: function (related, opts) {
 			var inst = this.instance,
 				model = this.model,
 				was = this.related,
@@ -132,7 +132,7 @@
 			
 			if (!inst._changing) {
 			
-				changed = inst.changed || (inst.changed = {}),
+				changed = inst.changed = {};
 				prev = inst.previous || (inst.previous = {});
 			
 				changed[key] = related;
@@ -228,7 +228,9 @@
 				collectionOpts = this.collectionOptions ? enyo.clone(this.collectionOptions) : {},
 				inst = this.instance,
 				key = this.key,
-				related = this.related != null ? this.related : inst.attributes[key];
+				related = this.related != null ? this.related : inst.attributes[key],
+				pkey,
+				i;
 			
 			if (typeof collection == 'string') collection = enyo.constructorForKind(collection);
 			if (typeof model == 'string') model = enyo.constructorForKind(model);
@@ -260,6 +262,23 @@
 			if (this.create) {
 				if (related != null) {
 					if (this.parse) related = collection.parse(related);
+					if (this.inverseKey) {
+						// ensure that the related data has the inverseKey property set
+						if (related instanceof Array) {
+							for (i = 0; i < related.length; i++) {
+								if (typeof related[i] == 'object') {
+									related[i] = enyo.clone(related[i]);
+									if (!related[i][this.inverseKey])
+										related[i][this.inverseKey] = inst;
+								} else if (typeof related[i] == 'string' || typeof related[i] == 'number') {
+									pkey = related[i];
+									related[i] = {};
+									related[i][this.inverseKey] = inst;
+									related[i][model.prototype.primaryKey || "id"] = pkey;
+								}
+							}
+						}
+					}
 					// we can avoid subsequent exists call because it needs to be an object
 					collection.add(related);
 				}
@@ -297,11 +316,19 @@
 		/**
 		* @private
 		*/
-		setRelated: function (data) {
+		setRelated: function (data, opts) {
+			opts = opts || {};
+			
 			var related = this.related;
 			
-			// related.add(data, {purge: true, parse: true});
-			related.add(data, {purge: true});
+			// reset changed values so that related collection has a clean state
+			related.added = null;
+			related.removed = null;
+			related.changed = null;
+			
+			related.add(data, enyo.mixin({}, [opts, {purge: true}]));
+			
+			return this;
 		},
 		
 		/**
@@ -348,7 +375,8 @@
 						create: false,
 						isOwner: !isOwner,
 						model: ctor,
-						related: inst
+						related: inst,
+						generated: true
 					});
 					
 					model.relations.push(rev);
@@ -388,26 +416,57 @@
 			
 			var inst = this.instance
 				, key = this.key
+				, inverseKey = this.inverseKey
 				, related = this.related
 				, isOwner = this.isOwner
-				, changed;
+				, changed
+				, added
+				, removed
+				, i;
 			
 			if (sender === enyo.store) {
 				if (e == 'add') {
 					if (this.checkRelation(props.model)) this.related.add(props.model, {merge: false});
 				}
 			} else if (sender === related) {
+				if (e == 'add') {
+					// in this case we added a model that should probably be
+					// updated to know about our instance as well
+
+					for (i = 0; i < props.models.length; i++) {
+						if (inverseKey && !props.models[i].get(inverseKey)) {
+							props.models[i].attributes[inverseKey] = inst;
+
+							if (this.checkRelation(props.models[i])) this.related.add(props.models[i], {merge: false});
+						}
+					}
+				}
+				
 				if (isOwner) {
+					if (!inst._changing) {
+						// reset changed values so that related collection has a clean state
+						related.added = null;
+						related.removed = null;
+						related.changed = null;
+					}
 					
-					// if the instance is already changing then we do not need to do anything
-					// because it probably stemmed from there anyway
-					if (inst._changing) return;
-					
-					// @todo This must be updated to be more thorough...
+					if (e == 'add') {
+						added = related.added || (related.added = []);
+						related.added = added.concat(props.models);
+					} else if (e == 'remove') {
+						removed = related.removed || (related.removed = []);
+						related.removed = removed.concat(props.models);
+					} else if (e == 'change') {
+						changed = related.changed || (related.changed = []);
+						changed.push(props.model);
+					}
+				}
+				
+				if (isOwner && !inst._changing) {
 					inst.isDirty = true;
-					changed = inst.changed || (inst.changed = {});
+					changed = inst.changed = {};
 					inst.previous || (inst.previous = {});
-					changed[key] = related;
+					changed[key] = this.related;
 					inst.emit('change', changed, inst);
 				}
 			}
@@ -418,6 +477,8 @@
 		*/
 		destroy: enyo.inherit(function (sup) {
 			return function () {
+				if (this.inverseKey) enyo.store.off(this.model, 'add', this._changed, this);
+
 				sup.apply(this, arguments);
 				
 				// @TODO: !!!
@@ -501,7 +562,8 @@
 						create: false,
 						isOwner: !isOwner,
 						model: Ctor,
-						related: inst
+						related: inst,
+						generated: true
 					})));
 				}
 				
@@ -676,7 +738,7 @@
 					// if the only information we have about the thing is a string or number
 					// then we facade a data hash so the model has the opportunity to work
 					// as expected
-					if (related != null && typeof related != 'object') {
+					if (typeof related != 'object') {
 						id = related;
 						related = {};
 						related[model.prototype.primaryKey] = id;
@@ -707,27 +769,43 @@
 		* @private
 		*/
 		setRelated: enyo.inherit(function (sup) {
-			return function (related) {
+			return function (related, opts) {
 				var val;
 				
 				if (related && related instanceof Model) {
+					// reset changed value so that the new related model has a clean state
+					related.changed = null;
+					
 					return sup.apply(this, arguments);
 				} else if (related != null) {
 					val = related;
 					related = this.getRelated();
 					
+					// if the value is an object then we update the related model if not then
 					// the only thing we can do is assume the value is intended to be the primary
 					// key of the model just like we would had it been passed into the constructor
-					if (this.create && related) related.set(related.primaryKey, val);
+					if (typeof val == 'object' && related) return related.set(val, opts);
+					else if (this.create && related) return related.set(related.primaryKey, val, opts);
 					// otherwise we allow it to be set and try and find the model from this new
 					// criterion but we don't do all the notifications for it as code expecting
 					// an instance may be disappointed (e.g. break, die, suicide, self-destruct...)
 					else {
-						this.related = related;
-						related = this.findRelated();
+						if (related) {
+							this.related = related;
+							related = this.findRelated();
+						} else {
+							this.related = val;
+							related = this.findRelated(val);
+							this.related = null;
+						}
 						// if it was found by this new value somehow we allow the original
 						// set to take place so it will notify everyone
-						if (related && related instanceof Model) return sup.call(this, related);
+						if (related && related instanceof Model) {
+							// reset changed value so that the new related model has a clean state
+							related.changed = null;
+
+							return sup.call(this, related);
+						}
 					}
 				}
 				
@@ -735,6 +813,8 @@
 				// would clear the related but most of the code assumes there will always be
 				// a value for related but it seems _possible_ that this behavior may be
 				// necessary so would need to find a way to handle that
+				
+				return this;
 			};
 		}),
 		
@@ -787,7 +867,8 @@
 							parse: false,
 							create: false,
 							model: this.instance.ctor,
-							related: this.instance
+							related: this.instance,
+							generated: true
 						});
 						
 						found.relations.push(rev);
@@ -804,7 +885,11 @@
 					}
 				}
 				
-				if (isOwner) found.on('change', this._changed, this);
+				if (isOwner) {
+					found.off('change', this._changed, this);
+					
+					found.on('change', this._changed, this);
+				}
 			}
 			
 			return found;
@@ -854,18 +939,12 @@
 			
 			if (sender === this.instance) {
 				if (e == 'change') {
-					if (key in props) this.findRelated();
+					if (props && key in props) this.findRelated();
 				}
 			} else if (sender === this.related) {
-				if (e == 'change' && isOwner) {
-					
-					// if the instance is already changing then we do not need to do anything
-					// because it probably stemmed from there anyway
-					if (inst._changing) return;
-					
-					// @todo This must be updated to be more thorough...
+				if (e == 'change' && isOwner && !inst._changing) {
 					inst.isDirty = true;
-					changed = inst.changed || (inst.changed = {});
+					changed = inst.changed = {};
 					inst.previous || (inst.previous = {});
 					changed[key] = this.related;
 					inst.emit('change', changed, inst);
@@ -945,9 +1024,11 @@
 		* @public
 		*/
 		getRelation: function (key) {
-			return this.relations.find(function (ln) {
-				return ln instanceof Relation && ln.key == key;
-			});
+			if (!this.destroyed) {
+				return this.relations.find(function (ln) {
+					return ln instanceof Relation && ln.key == key;
+				});
+			}
 		},
 		
 		/**
@@ -997,9 +1078,13 @@
 		*/
 		set: function (path, is, opts) {
 			if (!this.destroyed) {
-				var attrs = this.attributes
+				var changing = this._changing
+					, attrs = this.attributes
+					, options = this.options
 					, prev = this.previous
+					, setopts
 					, changed
+					, related
 					, incoming
 					, force
 					, silent
@@ -1021,9 +1106,15 @@
 					opts = {};
 				}
 			
-				opts || (opts = {});
+				setopts = opts;
+				
+				opts = opts ? enyo.mixin({}, [options, opts]) : options;
+				
 				silent = opts.silent;
 				force = force || opts.force;
+				
+				// reset value so changes won't be added to the previous change-set
+				this.changed = null;
 				
 				// ensure that recursive sub routines know we are already being updated and do not
 				// need to emit an event because we will
@@ -1039,16 +1130,28 @@
 					
 					curr = attrs[key];
 					if (curr && curr instanceof Relation) {
-						if(parts) curr.getRelated().set(parts.join('.'), value, opts);
-						else curr.setRelated(value, opts);
-						if (curr.isOwner) {
+						if (value == null) continue;
+
+						related = curr.getRelated();
+
+						if (curr.parse && opts.fetched) {
+							value = curr.getRelated().parse(value);
+						}
+
+						if (parts) {
+							curr.getRelated().set(parts.join('.'), value, setopts);
+						} else {
+							curr.setRelated(value, setopts);
+						}
+
+						if (force || related != curr.getRelated() || (curr.isOwner && 
+							(curr.getRelated().added || curr.getRelated().removed || 
+							curr.getRelated().changed)))
+						{
 							changed || (changed = this.changed = {});
 							changed[key] = curr.getRelated();
 						}
-						continue;
-					}
-					
-					if (value !== curr || force) {
+					} else if (value !== curr || force) {
 						prev || (prev = this.previous = {});
 						changed || (changed = this.changed = {});
 						// assign previous value for reference
@@ -1059,14 +1162,16 @@
 			
 				if (changed || force) {
 					// must flag this model as having been updated
-					this.isDirty = true;
+					if (!opts.fetched) this.isDirty = true;
 				
 					if (!silent) this.emit('change', changed, this);
 				}
+				
+				// make sure we clear the flag
+				if (!changing) this._changing = null;
 			}
 			
-			// make sure we clear the flag
-			this._changing = null;
+			return this;
 		},
 		
 		/**
@@ -1092,8 +1197,8 @@
 					// special handling for relations as we need to ensure that
 					// they are indeed supposed to be included
 
-					// if it is a falsy value then we do nothing
-					if (!iJson) delete cpy[key];
+					// if it is a falsy value or generated automatically then we do nothing
+					if (!iJson || rel.generated) delete cpy[key];
 					// otherwise we leave it up to the relation to return the correct
 					// value for its settings
 					else cpy[key] = rel.raw();
@@ -1121,19 +1226,28 @@
 		* @private
 		*/
 		destroy: enyo.inherit(function (sup) {
-			return function () {
-				var relations = this.relations,
+			return function (opts) {
+				var options = this.options,
+					relations = this.relations,
 					rel,
 					i = 0;
 				
-				// give the relations the ability to teardown during destruction
-				for (; (rel = relations[i]); ++i) {
-					rel.destroy();
-				}
+				opts = opts ? enyo.mixin({}, [options, opts]) : options;
 				
-				// carry on before finally removing our relations reference
-				sup.apply(this, arguments);
-				this.relations = null;
+				if (opts.commit || opts.source) {
+					sup.apply(this, arguments);
+				} else {
+					// give the relations the ability to teardown during destruction
+					for (; (rel = relations[i]); ++i) {
+						if (rel.destroy && !rel.destroyed)
+							rel.destroy();
+					}
+					
+					// carry on before finally removing our relations reference
+					sup.apply(this, arguments);
+					
+					this.relations = null;
+				}
 			};
 		}),
 		
@@ -1144,7 +1258,7 @@
 			// if there aren't any relations we initialize the value to an empty array
 			var rels = this.relations ? this.relations.slice() : [],
 				rel,
-				i = 0;
+				i;
 			
 			this.relations = rels;
 			
@@ -1152,7 +1266,7 @@
 			// we attempt to find their existing relations if possible
 			if (rels.length) {
 				
-				for (; (rel = rels[i]); ++i) {
+				for (i = 0; (rel = rels[i]); ++i) {
 					rels[i] = new rel.type(this, rel);
 				}
 				
