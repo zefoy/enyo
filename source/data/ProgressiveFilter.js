@@ -202,7 +202,7 @@
 				if (filtered) internal.silence().stopNotifications(true);
 				
 				// will ensure a reset gets propagated
-				internal.empty(models);
+				internal.empty(this.collection.models.copy());
 				
 				if (filtered) {
 					internal.unsilence().startNotifications(true);
