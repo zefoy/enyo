@@ -113,7 +113,7 @@
 		*
 		* @private
 		*/
-		kFrictionDamping: 0.97,
+		kFrictionDamping: 0.96,
 
 		/** 
 		* Additional "friction" damping applied when momentum carries the viewport into overscroll. 
@@ -128,7 +128,7 @@
 		*
 		* @private
 		*/
-		kFlickScalar: 15,
+		kFlickScalar: 10,
 
 		/** 
 		* Limits the maximum allowable flick. On Android > 2, we limit this to prevent compositing 
@@ -351,6 +351,7 @@
 				if (this.dragging) {
 					this.y0 = this.y = this.uy;
 					this.x0 = this.x = this.ux;
+					this.endX = this.endY = null;
 				}
 				// frame-time accumulator
 				// min acceptable time is 16ms (60fps)
@@ -367,7 +368,7 @@
 				// consume some t in simulation
 				t = this.simulate(t);
 				// scroll if we have moved, otherwise the animation is stalled and we can stop
-				if (y0 != this.y || x0 != this.x) {
+				if ((!isNaN(this.y) && y0 != this.y) || (!isNaN(this.x) && x0 != this.x)) {
 					//this.log(this.y, y0);
 					this.scroll();
 				} else if (!this.dragging) {

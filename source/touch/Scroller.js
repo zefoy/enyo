@@ -315,9 +315,12 @@
 				return true;
 			},
 			getTouchStrategy: function() {
+/*
 				return (enyo.platform.androidChrome >= 27) || (enyo.platform.android >= 3) || (enyo.platform.windowsPhone === 8) || (enyo.platform.webos >= 4)
 					? 'TranslateScrollStrategy'
 					: 'TouchScrollStrategy';
+*/
+				return "TouchScrollStrategy";
 			}
 		},
 
