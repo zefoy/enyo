@@ -164,6 +164,8 @@
 			return function() {
 				if (enyo.platform.ie) {
 					this.handlers.onkeyup = 'iekeyup';
+					this.handlers.onkeydown = 'iekeypress';
+					this.handlers.onkeypress = 'iekeypress';
 				}
 				if (enyo.platform.windowsPhone) {
 					this.handlers.onkeydown = 'iekeydown';
@@ -263,6 +265,16 @@
 			// onchange event fails to fire on enter key for Windows Phone 8, so we force blur
 			if (wp <= 8 && kc == 13 && this.tag == 'input' && dt.hasNode()) {
 				dt.node.blur();
+			}
+		},
+
+		/**
+		* @private
+		*/
+		iekeypress: function(inSender, inEvent) {
+			// unhandled keydown/press would prevent input on ie 8 so return true to mark it as handled
+			if (!this.disabled && this.hasFocus) {
+				return true;
 			}
 		},
 

@@ -141,6 +141,11 @@
 			var body;
 			if (this.method != 'GET') {
 				body = this.postBody;
+
+				// on IE8-9 protocol must match when using POST request
+				if (enyo.platform.ie === 8 || enyo.platform.ie === 9)
+					url = url.replace("https:", window.location.protocol);
+
 				if (this.method === 'POST' && body instanceof enyo.FormData) {
 					if (body.fake) {
 						xhr_headers['Content-Type'] = body.getContentType();
@@ -152,7 +157,8 @@
 						// to the FormData
 					}
 				} else {
-					xhr_headers['Content-Type'] = this.contentType;
+					if (this.contentType)
+						xhr_headers['Content-Type'] = this.contentType;
 					if (body instanceof Object) {
 						if (this.contentType.match(/^application\/json(;.*)?$/) !== null) {
 							body = JSON.stringify(body);
