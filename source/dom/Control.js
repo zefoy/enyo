@@ -491,7 +491,7 @@
 			// NOTE: Because this method accepts a string and for efficiency does not wish to
 			// parse it to determine if it is actually multiple classes we later pull a trick
 			// to keep it normalized and synchronized with our attributes hash and the node's
-			if (!this.hasClass(name)) {
+			if (name && !this.hasClass(name)) {
 
 				// this is hooked
 				this.set('classes', classes + (classes ? (' ' + name) : name));
@@ -614,7 +614,13 @@
 
 					// otherwise we have to try and prepare it for the next time it is rendered we
 					// will need to update it because it will not be synchronized
-				} else this.set('style', style + (' ' + prop + ':' + value + ';'));
+				} else {
+					this.set('style', style + (' ' + prop + ':' + value + ';'));
+
+					// we need to track changes even if not rendered or otherwise the style might
+					// not be synced properly once the control is re-rendered
+					this.cssText = this.style;
+				}
 			} else {
 
 				// in this case we are trying to clear the style property so if we have the node
@@ -639,6 +645,10 @@
 						'gi'
 					),'');
 					this.set('style', style);
+	
+					// we need to track changes even if not rendered or otherwise the style might
+					// not be synced properly once the control is re-rendered
+					this.cssText = this.style;
 				}
 			}
 
