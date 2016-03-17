@@ -728,7 +728,7 @@
 			// cases it may be useful to have a record that is never added to a store?
 			if (!noAdd) this.store.add(this, opts);
 
-			commit && this.commit();
+			commit && !fetch && this.commit();
 			fetch && this.fetch();
 		},
 
@@ -775,6 +775,7 @@
 		*/
 		fetched: function (opts, res, source) {
 			var idx,
+				setopts = opts,
 				options = this.options;
 
 			if (this._waiting) {
@@ -786,7 +787,7 @@
 			}
 
 			// normalize options so we have values and ensure it knows it was just fetched
-			opts = opts ? enyo.mixin({}, [options, opts]) : options;
+			opts = enyo.mixin({}, [options, opts]);
 			opts.fetched = true;
 
 			// for a special case purge to only use the result sub-tree of the fetched data for
@@ -795,7 +796,7 @@
 
 			// note this will not add the DIRTY state because it was fetched but also note that it
 			// will not clear the DIRTY flag if it was already DIRTY
-			if (res) this.set(res, opts);
+			if (res) this.set(res, enyo.mixin(setopts, {fetched: true}));
 
 			// clear the FETCHING and NEW state (if it was NEW) we do not set it as dirty as this
 			// action alone doesn't warrant a dirty flag that would need to be set in the set method
@@ -837,7 +838,7 @@
 				// we need to clear the COMMITTING bit and DIRTY bit as well as ensure that the
 				// 'previous' hash is whatever the current attributes are
 				this.previous = enyo.clone(this.attributes, true);
-				this.status = (this.status | STATES.CLEAN) & ~(STATES.COMMITTING | STATES.DIRTY);
+				this.status = (this.status | STATES.CLEAN) & ~(STATES.COMMITTING | STATES.DIRTY | STATES.NEW);
 			}
 
 			if (opts && opts.success) opts.success(this, opts, res, source);
