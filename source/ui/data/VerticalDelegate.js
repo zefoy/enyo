@@ -251,7 +251,10 @@
 					// we always update the default child size value first, here
 					childSize = this.childSize(list);
 					// using height/width of the available viewport times our multiplier value
-					perPage   = list.controlsPerPage = Math.ceil(((fn.call(this, list) * multi) / childSize) + 1);
+					if (list.scroller === false)
+						perPage   = list.controlsPerPage = list.collection ? list.collection.length : 0;
+					else
+						perPage   = list.controlsPerPage = Math.ceil(((fn.call(this, list) * multi) / childSize) + 1);
 					// update our time for future comparison
 					list._updatedControlsPerPage = enyo.perfNow();
 				}
@@ -309,7 +312,7 @@
 			var m = list.metrics.pages[page.index];
 			var len = list.collection? list.collection.length: 0;
 			if (h === 0 && len && page.node.children.length) {
-				list.heightNeedsUpdate = true;
+				//list.heightNeedsUpdate = true;
 				// attempt to reuse the last known height for this page
 				h = m? m.height: 0;
 			}
@@ -326,7 +329,7 @@
 			var m = list.metrics.pages[page.index];
 			var len = list.collection? list.collection.length: 0;
 			if (w === 0 && len && page.node.children.length) {
-				list.widthNeedsUpdate = true;
+				//list.widthNeedsUpdate = true;
 				// attempt to reuse the last known width for this page
 				w = m? m.width: 0;
 			}
@@ -413,7 +416,7 @@
 			// props.models is removed modelList and the lowest index among removed models	
 			if (props.models.low <= lastIdx) {
 				this.refresh(list);
-				this.scrollToIndex(list, Math.min(pg1.start, pg2.start));
+				//this.scrollToIndex(list, Math.min(pg1.start, pg2.start));
 			}
 		},
 		
@@ -629,8 +632,22 @@
 		* @private
 		*/
 		didResize: function (list) {
+			var prev = list.boundsCache;
+
 			list._updateBounds = true;
 			this.updateBounds(list);
+
+			// if no change it the viewport then we didn't update anything size-wise
+			// and do not need to refresh at all
+			if (
+				prev.left   === list.boundsCache.left  &&
+				prev.top    === list.boundsCache.top   &&
+				prev.width  === list.boundsCache.width &&
+				prev.height === list.boundsCache.height
+			) {
+				return;
+			}
+
 			this.refresh(list);
 		},
 

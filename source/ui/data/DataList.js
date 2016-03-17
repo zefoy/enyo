@@ -69,6 +69,26 @@
 		kind: enyo.DataRepeater,
 
 		/**
+		* {@link enyo.DataList} places its rows inside of a [scroller]{@link enyo.Scroller},
+		* to be efficient, but the scroller can be disabled with this property.
+		*
+		* @type {Object}
+		* @default null
+		* @public
+		*/
+		scroller: true,
+
+		/**
+		* {@link enyo.DataList} places its rows inside of a [scroller]{@link enyo.Scroller}.
+		* Default scroller kind is enyo.Scroller, but it can be overwritten by this property.
+		*
+		* @type {Object}
+		* @default null
+		* @public
+		*/
+		scrollerKind: null,
+
+		/**
 		* {@link enyo.DataList} places its rows inside of a [scroller]{@link enyo.Scroller}.
 		* Any configurable options of {@link enyo.Scroller} may be placed in the
 		* `scrollerOptions` [hash]{@glossary Object}; their values will be set on the
@@ -291,6 +311,7 @@
 					if (this.didRender) {
 						this.didRender();
 					}
+					this.didResize();
 				};
 				if (this.renderDelay === null) {
 					startup.call(this);
@@ -399,8 +420,13 @@
 		*/
 		initContainer: enyo.inherit(function (sup) {
 			return function () {
+				if (!this.scroller) this.applyStyle("height", "auto");
 				var o = enyo.clone(this.get('containerOptions')),
-					s = this.get('scrollerOptions');
+					s = this.get('scrollerOptions'),
+					k = this.get('scrollerKind');
+					if (this.get('scroller') !== false)
+					 o.classes += " enyo-fit";
+				if (k) { o.kind = k; }
 				if (s) { enyo.mixin(o, s, {exists: true}); }
 				this.set('containerOptions', o);
 				sup.apply(this, arguments);
@@ -415,12 +441,12 @@
 		*/
 		didScroll: function (sender, e) {
 			if (this.hasRendered && this.collection) {
-				if (this.heightNeedsUpdate || this.widthNeedsUpdate) {
+				/*if (this.heightNeedsUpdate || this.widthNeedsUpdate) {
 					// assign this here so that if for any reason it needs to
 					// it can reset it
 					this.heightNeedsUpdate = this.widthNeedsUpdate = false;
 					this.refresh();
-				}
+				}*/
 				this.delegate.didScroll(this, e);
 			}
 			return true;
@@ -435,12 +461,12 @@
 		didResize: function (sender, e) {
 			if (this.get('absoluteShowing')) {
 				if (this.hasRendered && this.collection) {
-					if (this.heightNeedsUpdate || this.widthNeedsUpdate) {
+					/*if (this.heightNeedsUpdate || this.widthNeedsUpdate) {
 						// assign this here so that if for any reason it needs to
 						// it can reset it
 						this.heightNeedsUpdate = this.widthNeedsUpdate = false;
 						this.refresh();
-					}
+					}*/
 					this.delegate.didResize(this, e);
 				}
 			} else {
@@ -495,7 +521,7 @@
 				{name: 'page2', classes: 'page page2'},
 				{name: 'buffer', classes: 'buffer'}
 			]}
-		], canGenerate: false, classes: 'enyo-fit enyo-data-list-scroller'},
+		], canGenerate: false, classes: 'enyo-data-list-scroller'},
 
 		/**
 		* We access this [kind's]{@glossary kind} [constructor]{@glossary constructor} and
