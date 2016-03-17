@@ -378,6 +378,15 @@
 			if (c) {
 				this.initCollection(c, p);
 			}
+			if (this.selectionProperty) {
+				var s = this._selection
+					, len = this.collection? this.collection.length: 0;
+				s.length = 0;
+				for (var i=0; i<len; ++i) {
+					if (this.collection.at(i).get(this.selectionProperty))
+						this.select(i);
+				}
+			}
 		},
 
 		/**
@@ -528,10 +537,12 @@
 				}
 			}
 
-			if (c) {
+			// only set selected attribute if the selection property is not used, otherwise
+			// there is a change that the selection property binding will cause problems
+
+			if (c && (!this.selectionProperty | !model)) {
 				c.set('selected', select);
-			}
-			if (this.selectionProperty && model) {
+			} else if (this.selectionProperty && model) {
 				(s=this.selectionProperty) && model.set(s, select);
 			}
 			this.notifyObservers('selected');
