@@ -490,7 +490,8 @@
 					
 					if (merge) {
 						attrs || (attrs = model.attributes);
-						found.set(attrs, opts);
+						parse && (attrs = found.parse(attrs));
+						found.set(attrs, modelOpts);
 					}
 					// with the purge flag we endeavor on the expensive track of removing
 					// those models currently in the collection that aren't in the incoming
@@ -510,7 +511,7 @@
 					added || (added = []);
 					added.push(found);
 					this.prepareModel(found, opts);
-					merge && found.set(attrs, opts);
+					merge && found.set(attrs, modelOpts);
 				} else if (!attrs) {
 					added || (added = []);
 					added.push(model);
@@ -534,7 +535,7 @@
 			// here we process those models to be removed if purge was true
 			// the other guard is just in case we actually get to keep everything
 			// so we don't do this unnecessary pass
-			if (purge && (keep && keep.length)) {
+			if (purge) {
 				removed || (removed = []);
 				keep || (keep = {});
 				for (i=0; i<len; ++i) !keep[(model = loc[i]).euid] && removed.push(model);
@@ -545,7 +546,6 @@
 			// added && loc.stopNotifications().add(added, idx).startNotifications();
 			if (added) {
 				loc.add(added, idx);
-				sort && this.sort(sort, {silent: true});
 				
 				// we batch this operation to make use of its ~efficient array operations
 				this.store.add(added); 
@@ -561,6 +561,8 @@
 					this.emit('add', {models: added, collection: this, index: idx});
 				}
 			}
+			
+			if (added) sort && this.sort(sort, {silent: silent});
 			
 			// note that if commit is set but this was called from a successful fetch this will be
 			// a nop (as intended)
