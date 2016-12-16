@@ -1,7 +1,12 @@
 (function (enyo, scope) {
 	
-	var localStorage = scope.localStorage;
-	
+	var localStorage = null;
+
+  try {
+    localStorage = scope.localStorage;
+	} catch(error) {
+  }
+
 	if (localStorage) {
 		var kind = enyo.kind
 			, json = enyo.json
