@@ -408,9 +408,9 @@
 		*/
 		stop: function (fire) {
 			var job = this.job;
-			/*if (job) {
+			if (job && !fire) {
 				this.job = enyo.cancelRequestAnimationFrame(job);
-			}*/
+			}
 			if (fire) {
 				this.doScrollStop();
 
