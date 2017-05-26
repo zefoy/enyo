@@ -232,9 +232,9 @@
 	enyo.ready(function() {
 		// no need for IE8 fallback, since it won't ever send this event
 		if (document.addEventListener) {
-			document.addEventListener('webkitfullscreenchange', enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), false);
-			document.addEventListener('mozfullscreenchange',    enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), false);
-			document.addEventListener('fullscreenchange',       enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), false);
+			document.addEventListener('webkitfullscreenchange', enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), {passive: false, capture: false});
+			document.addEventListener('mozfullscreenchange',    enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), {passive: false, capture: false});
+			document.addEventListener('fullscreenchange',       enyo.bind(enyo.fullscreen, 'detectFullscreenChangeEvent'), {passive: false, capture: false});
 		}
 	});
 

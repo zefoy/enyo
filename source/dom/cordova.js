@@ -54,6 +54,6 @@ enyo.ready(function() {
 			// go ahead and broadcast the signal for the 'deviceready' event
 			enyo.Signals.send('ondeviceready', inEvent);
 
-		}, false);
+		}, {passive: false, capture: false});
 	}
 });

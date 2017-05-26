@@ -77,7 +77,7 @@
 			var d = enyo.dispatch;
 			if (inListener.addEventListener) {
 				this.listen = function(inListener, inEventName, inHandler) {
-					inListener.addEventListener(inEventName, inHandler || d, false);
+					inListener.addEventListener(inEventName, inHandler || d, {passive: false, capture: false});
 				};
 			} else {
 				//enyo.log("IE8 COMPAT: using 'attachEvent'");
@@ -101,7 +101,7 @@
 			var d = enyo.dispatch;
 			if (inListener.addEventListener) {
 				this.stopListening = function(inListener, inEventName, inHandler) {
-					inListener.removeEventListener(inEventName, inHandler || d, false);
+					inListener.removeEventListener(inEventName, inHandler || d, {passive: false, capture: false});
 				};
 			} else {
 				//enyo.log("IE8 COMPAT: using 'detachEvent'");

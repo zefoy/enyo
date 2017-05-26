@@ -399,7 +399,7 @@
 				var p = e.VERTICAL_AXIS == e.axis ? 'wheelDeltaY' : 'wheelDeltaX';
 				e[p] =  e.detail * -40;
 				enyo.dispatch(e);
-			}, false);
+			}, {passive: false, capture: false});
 		}
 	});
 

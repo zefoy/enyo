@@ -70,7 +70,7 @@
 	add = function (event, fn) {
 		var name = doc.addEventListener? "addEventListener": "attachEvent";
 		var on = name === "attachEvent"? "on": "";
-		doc[name](on + event, fn, false);
+		doc[name](on + event, fn, {passive: false, capture: false});
 	};
 
 	/**
@@ -79,7 +79,7 @@
 	remove = function (event, fn) {
 		var name = doc.addEventListener? "removeEventListener": "detachEvent";
 		var on = name === "detachEvent"? "on": "";
-		doc[name](on + event, fn, false);
+		doc[name](on + event, fn, {passive: false, capture: false});
 	};
 
 	/**

@@ -48,7 +48,7 @@
 	if (document.addEventListener) {
 		document.addEventListener('localechange', function(e) {
 			enyo.updateLocale();
-		}, false);
+		}, {passive: false, capture: false});
 	}
 
 })(enyo, this);
